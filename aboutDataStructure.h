@@ -14,6 +14,8 @@
 
 #define FREE_LIST_NUMBER 8
 
+
+
 //Well it seems needs to have double word for initialization, but it's still crazy to write this, but very good for relieve stress
 #define INIT_MEMORY_SIZE(size) ((size+UNIT_SIZE-1)/UNIT_SIZE+1)/2*2*UNIT_SIZE
 
@@ -29,9 +31,11 @@ void addFooter(void *pd, int size, int state);
 //Our basic structure for (free) list, and we use pointer of char for data as it's more safe to return as void*
 typedef struct block{
     Header header;
-    char *data;
+    void *data;
     Footer footer;
 }*Block;
+
+Block initDataBlock(void *pd);
 
 //Actually we regard the address of data as the pointer return to user
 char *getBlockDataPointer(Block block);
@@ -42,14 +46,18 @@ int checkNextBlock(Block pb);
 
 
 typedef struct listBlock{
+    int size;
     Block block;
+    struct listBlock *last;
     struct listBlock *next;
 }*ListBlock;
+
+ListBlock initListBlock(void *pd);
+
 
 #define LIST_HOME_SIZE
 //#define ListBlock[LIST_HOME_SIZE] MY_LIST
 
-ListBlock initListBlock();
 
 void insertFreeList(ListBlock freeLists[], void *pd);
 void insertUserList(ListBlock head, ListBlock list);
@@ -64,12 +72,12 @@ int countListSpace ();
 
 //Get block's header info base on the address of block
 #define GET_POINTER_VALUE(p) ( *(int *) )
-#define GET_HEADER_ADR(pb) ( (pb-1) )
+#define GET_HEADER_ADR(pb) ( (pb-UNIT_SIZE) )
 #define GET_HEADER_VALUE(pb) ( *(int *) GET_HEADER_ADR(pb) )
 #define GET_PREV_BLOCK_INFO(pb) ( *(int *) (pb-2) )
 //Unfortunately we cannot use macro for footer as we dont know the signe, small pain but okay
-int *GET_FOOTER_ADR(Block block);
-int GET_NEXT_BLOCK_INFO(Block block);
+int *GET_FOOTER_ADR(void *pd);
+int GET_NEXT_BLOCK_INFO(void *pd);
 
 
 

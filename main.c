@@ -10,8 +10,8 @@ void* myrealloc(int nBytes);
 
 //Tests show that void* is a kind of char*, so we move the position by unit 'byte'
 void *myMemoryPool;
-ListBlock freeLists[FREE_LIST_NUMBER];
-ListBlock userList;
+ListBlock myFreeLists[FREE_LIST_NUMBER];
+ListBlock myUserList;
 
 int main() {
     initMemory(10);
@@ -28,17 +28,18 @@ int initMemory(int nBytes){
 
         Header initHeader = myMemoryPool ;
         Footer initFooter = myMemoryPool + local - UNIT_SIZE;
-        myMemoryPool += UNIT_SIZE;
+        void *firstBlock = myMemoryPool+UNIT_SIZE;
         *initHeader = 0;
         *initFooter = 0;
-        myMemoryPool = addHeader(myMemoryPool,(local-2*UNIT_SIZE),STATE_FREE);
+        firstBlock = addHeader(firstBlock,(local-2*UNIT_SIZE),STATE_FREE);
+        addFooter(firstBlock,(local-2*UNIT_SIZE),STATE_FREE);
 
         for (int i=0;i<FREE_LIST_NUMBER;i++){
-            freeLists[i]=initListBlock();
+            myFreeLists[i]=initListBlock();
         }
-        insertFreeList(freeLists,myMemoryPool);
+        insertFreeList(myFreeLists, firstBlock);
 
-        userList = initListBlock();
+        myUserList = initListBlock();
 
         return 1;
     }

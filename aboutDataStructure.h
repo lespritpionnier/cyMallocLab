@@ -24,7 +24,7 @@
 typedef int* Header;
 typedef int* Footer;
 
-void *addHeader(void *pd, int size, int state);
+void addHeader(void *pd, int size, int state);
 void addFooter(void *pd, int size, int state);
 
 
@@ -67,6 +67,8 @@ ListBlock findFreeList(ListBlock freeLists[], int nBytes);
 void freeUserList(ListBlock userLists, void *p, ListBlock freeLists[]);
 void freeBusyList(ListBlock freeLists[], ListBlock listToFree);
 void fusionList(ListBlock freeLists[], ListBlock newList);
+void deleteFusionInfo(void*pd);
+
 
 int countListSpace ();
 
@@ -80,10 +82,10 @@ int countListSpace ();
 #define GET_POINTER_VALUE(p) ( *(int *) )
 #define GET_HEADER_ADR(pb) ( (pb-UNIT_SIZE) )
 #define GET_HEADER_VALUE(pb) ( *(int *) GET_HEADER_ADR(pb) )
-#define GET_PREV_BLOCK_INFO(pb) ( *(int *) (pb-2) )
+#define GET_PREV_BLOCK_ADR(pb) ( (void *) (pb-2*UNIT_SIZE) )
 //Unfortunately we cannot use macro for footer as we dont know the signe, small pain but okay
 int *GET_FOOTER_ADR(void *pd);
-int GET_NEXT_BLOCK_INFO(void *pd);
+void * GET_NEXT_BLOCK_ADR(void *pd);
 
 
 

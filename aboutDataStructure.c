@@ -6,10 +6,8 @@
 #include "aboutDataStructure.h"
 
 
-void *addHeader(void *pd, int size, int state){
-    void *after = pd + UNIT_SIZE;
-    *(int*) pd = (size-2*UNIT_SIZE)*state;
-    return after;
+void addHeader(void *pd, int size, int state){
+    *(int*) (pd-UNIT_SIZE) = (size-2*UNIT_SIZE)*state;
 }
 
 void addFooter(void *pd, int size, int state){
@@ -21,8 +19,8 @@ int *GET_FOOTER_ADR(void *pd){
     return (int *) (pd + GET_SIZE_REAL(abs(GET_HEADER_VALUE(pd))));
 }
 
-int GET_NEXT_BLOCK_INFO(void *pd){
-    return *(int *) (GET_FOOTER_ADR(pd) + UNIT_SIZE);
+void * GET_NEXT_BLOCK_ADR(void *pd){
+    return (void *) (GET_FOOTER_ADR(pd) + UNIT_SIZE);
 }
 
 
@@ -36,12 +34,12 @@ int getBlockSize (Block block){
 
 //Check if the previous block is occupied
 int checkPrevBlock(Block block){
-    return GET_PREV_BLOCK_INFO(getBlockDataPointer(block)) <= 0;
+    return GET_HEADER_VALUE(GET_PREV_BLOCK_ADR(getBlockDataPointer(block))) <= 0;
 }
 
 //Check if the next block is occupied
 int checkNextBlock(Block block){
-    return GET_NEXT_BLOCK_INFO(getBlockDataPointer(block)) <= 0;
+    return GET_NEXT_BLOCK_ADR(getBlockDataPointer(block)) <= 0;
 }
 
 Block initDataBlock(void *pd){
@@ -133,11 +131,11 @@ ListBlock findFreeList(ListBlock freeLists[], int nBytes){
             size=size/2;
         }
         if (position<0){
-            insertOrderFreeList(freeLists[0], pd);
+            firstFitFreeList(freeLists[0], nBytes);
         } else if (position>=FREE_LIST_NUMBER){
-            insertOrderFreeList(freeLists[FREE_LIST_NUMBER - 1], pd);
+            firstFitFreeList(freeLists[FREE_LIST_NUMBER - 1], nBytes);
         }else{
-            insertOrderFreeList(freeLists[position], pd);
+            firstFitFreeList(freeLists[position], nBytes);
         }
     } else{
         fprintf(stderr,"Erreur, inser une liste occupé");
@@ -172,8 +170,41 @@ void freeUserList(ListBlock userLists, void *p, ListBlock freeLists[]) {
 
 
 
+void freeBusyList(ListBlock freeLists[], ListBlock listToFree){
+    fusionList(freeLists,initListBlock(listToFree->block));
+    free(listToFree);
+}
 
 
 
+void fusionList(ListBlock freeLists[], ListBlock newList){
+    void *actual = newList->block->data;
 
+    int size = GET_HEADER_VALUE(GET_NEXT_BLOCK_ADR(actual));
+    if( size > 0){
+        size = size + abs(GET_HEADER_VALUE(actual)) + 2*UNIT_SIZE;
+        deleteFusionInfo(GET_NEXT_BLOCK_ADR(actual));
+        addHeader(actual,size,STATE_FREE);
+        addFooter(actual,size,STATE_FREE);
+    }
+
+    size = GET_HEADER_VALUE(GET_PREV_BLOCK_ADR(newList->block->data));
+    if ( size > 0){
+        size = size + abs(GET_HEADER_VALUE(actual)) + 2*UNIT_SIZE;
+        void *t = GET_PREV_BLOCK_ADR(actual);
+        deleteFusionInfo(GET_NEXT_BLOCK_ADR(actual));
+        actual = t;
+        addHeader(actual,size,STATE_FREE);
+        addFooter(actual,size,STATE_FREE);
+    }
+
+    free(newList);
+    insertFreeList(freeLists,actual);
+}
+
+
+void deleteFusionInfo(void*pd){
+    * (int *) (pd-UNIT_SIZE) = NULL;
+    * (int *) (pd-UNIT_SIZE*2) = NULL;
+}
 

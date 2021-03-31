@@ -13,7 +13,7 @@ void *addHeader(void *pd, int size, int state){
 }
 
 void addFooter(void *pd, int size, int state){
-    *(int*) (pd + (size-1*UNIT_SIZE)*state) = size*state - 2*UNIT_SIZE;
+    *(int*) (pd + (size*state-1*UNIT_SIZE)) = size*state - 2*UNIT_SIZE;
 }
 
 
@@ -52,25 +52,31 @@ Block initDataBlock(void *pd){
 }
 
 
-ListBlock initListBlock(void *pd){
+ListBlock initListBlock(Block block){
     ListBlock new = (ListBlock) malloc(sizeof(struct listBlock));
-    new->size = GET_HEADER_VALUE(pd);
-    new->block = initDataBlock(pd);
-    new->next = null;
-    new->last = null;
+    new->size = GET_HEADER_VALUE(block->data);
+    new->block = block;
+    new->next = NULL;
+    new->last = NULL;
     return new;
 }
 
-void insertOrderList(ListBlock head, void *pd){
-    if (head==null){
-        head=initListBlock(pd);
-    } else if ((head->next==null)||(head->size<GET_HEADER_VALUE(pd))){
+void deleteList(ListBlock this){
+    if (this->last!=NULL)this->last->next=this->next;
+    if (this->next!=NULL)this->next->last=this->last;
+    free(this);
+}
+
+void insertOrderFreeList(ListBlock head, void *pd){
+    if (head==NULL){
+        head=initListBlock(initDataBlock(pd));
+    } else if ((head->next==NULL)||(head->size<GET_HEADER_VALUE(pd))){
         if (head->size<GET_HEADER_VALUE(pd)){
-            ListBlock new = initListBlock(pd);
+            ListBlock new = initListBlock(initDataBlock(pd));
             new->last = head;
             head->next = new;
         } else{
-            ListBlock change =  initListBlock(head->block->data);
+            ListBlock change =  initListBlock(head->block);
             head->block = initDataBlock(pd);
             head->size = GET_HEADER_VALUE(pd);
             head->next = change;
@@ -78,10 +84,10 @@ void insertOrderList(ListBlock head, void *pd){
     }else {
         ListBlock current = head;
         int size = GET_HEADER_VALUE(pd);
-        while (current->size<size && current->next!=null) {
+        while (current->size<size && current->next!=NULL) {
             current=current->next;
         }
-        ListBlock new = initListBlock(pd);
+        ListBlock new = initListBlock(initDataBlock(pd));
         current->last->next = new;
         new->last = current->last;
         current->last = new;
@@ -97,11 +103,41 @@ void insertFreeList(ListBlock freeLists[], void *pd){
             size=size/2;
         }
         if (position<0){
-            insertOrderList(freeLists[0],pd);
+            insertOrderFreeList(freeLists[0], pd);
         } else if (position>=FREE_LIST_NUMBER){
-            insertOrderList(freeLists[FREE_LIST_NUMBER-1],pd);
+            insertOrderFreeList(freeLists[FREE_LIST_NUMBER - 1], pd);
         }else{
-            insertOrderList(freeLists[position],pd);
+            insertOrderFreeList(freeLists[position], pd);
+        }
+    } else{
+        fprintf(stderr,"Erreur, inser une liste occupé");
+    }
+}
+
+ListBlock firstFitFreeList(ListBlock freeList, int size){
+    ListBlock current = freeList;
+    while (current->size<size){
+        current=current->next;
+    }
+    ListBlock new = initListBlock(current->block);
+    new->size=size;
+    deleteList(current);
+    return new;
+}
+
+ListBlock findFreeList(ListBlock freeLists[], int nBytes){
+    int size = nBytes;
+    if(size>0){
+        int position=-5;
+        while (size!=0){
+            size=size/2;
+        }
+        if (position<0){
+            insertOrderFreeList(freeLists[0], pd);
+        } else if (position>=FREE_LIST_NUMBER){
+            insertOrderFreeList(freeLists[FREE_LIST_NUMBER - 1], pd);
+        }else{
+            insertOrderFreeList(freeLists[position], pd);
         }
     } else{
         fprintf(stderr,"Erreur, inser une liste occupé");
@@ -109,7 +145,27 @@ void insertFreeList(ListBlock freeLists[], void *pd){
 }
 
 void insertUserList(ListBlock head, ListBlock list){
+    if (head==NULL){
+        head=list;
+    }
+    ListBlock position = head;
+    while (position->next!=NULL){
+        position=position->next;
+    }
+    position->next=position;
+    list->last=position;
+}
 
+void freeUserList(ListBlock userLists, void *p, ListBlock freeLists[]) {
+    ListBlock position = userLists;
+    while (position->block->data!=p&&position!=NULL){
+        position=position->next;
+    }
+    if (position==NULL){
+        fprintf(stderr,"Element n'exist pas!");
+    } else{
+        freeBusyList(freeLists,position);
+    }
 }
 
 

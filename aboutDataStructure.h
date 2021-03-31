@@ -52,8 +52,7 @@ typedef struct listBlock{
     struct listBlock *next;
 }*ListBlock;
 
-ListBlock initListBlock(void *pd);
-
+ListBlock initListBlock(Block block);
 
 #define LIST_HOME_SIZE
 //#define ListBlock[LIST_HOME_SIZE] MY_LIST
@@ -61,6 +60,13 @@ ListBlock initListBlock(void *pd);
 
 void insertFreeList(ListBlock freeLists[], void *pd);
 void insertUserList(ListBlock head, ListBlock list);
+
+ListBlock firstFitFreeList(ListBlock freeList, int size);
+ListBlock findFreeList(ListBlock freeLists[], int nBytes);
+
+void freeUserList(ListBlock userLists, void *p, ListBlock freeLists[]);
+void freeBusyList(ListBlock freeLists[], ListBlock listToFree);
+void fusionList(ListBlock freeLists[], ListBlock newList);
 
 int countListSpace ();
 

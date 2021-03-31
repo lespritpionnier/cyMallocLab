@@ -68,7 +68,7 @@ int myfree(void* p){
     freeUserList(myUserList, p, myFreeLists);
 }
 void* myrealloc(void *p, int nBytes){
-    freeUserList(myUserList,p,myFreeLists);
+    myfree(p);
     p = myalloc(nBytes);
     return p;
 

@@ -166,7 +166,19 @@ void freeUserList(ListBlock userLists, void *p, ListBlock freeLists[]) {
     }
 }
 
-
+ListBlock findUserList(ListBlock userList, void *p) {
+    ListBlock current = userList;
+    while (current != NULL){
+        if (userList->block->data==p)break;
+        current=current->next;
+    }
+    if (current == NULL){
+        fprintf(stderr,"Element n'exist pas!");
+        return NULL;
+    } else{
+        return current;
+    }
+}
 
 
 
